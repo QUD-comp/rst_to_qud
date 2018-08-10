@@ -27,15 +27,15 @@ class Rst_Node:
         if not isinstance(child, Rst_Node):
             raise TypeError("child must be an Rst_Node")
         
-        child_nodes, rel_type = children
+        child_nodes, relname = children
         child_nodes.append(child)
-        self.children = (child_nodes, rel_type)
+        self.children = (child_nodes, relname)
 
-    def add_satellite(satellite, rel_type):
-        """Add an Rst_Node as satellite with relation type rel_type."""
+    def add_satellite(satellite, relname):
+        """Add an Rst_Node as satellite with relation relname."""
         if not isinstance(satellite,Rst_Node):
             raise TypeError("satellite must be an Rst_Node")
 
-        self.satellites.append((satellite, rel_type))
+        self.satellites.append((satellite, relname))
 
     
