@@ -2,6 +2,29 @@ from nltk.parse import stanford
 from nltk.tokenize import sent_tokenize, word_tokenize
 import jpype
 
+#Tregex patterns from (Heilman, 2011)
+#marking unmovable phrases
+tregex_patterns = ["VP < (S=unmv $,, /,/)",
+                   "S < PP|ADJP|ADVP|S|SBAR=unmv > ROOT",
+                   "/\\.*/ < CC << NP|ADJP|VP|ADVP|PP=unmv",
+                   "SBAR < (IN|DT < /[ˆthat]/) << NP|PP=unmv",
+                   "SBAR < /ˆWH.*P$/ << NP|ADJP|VP|ADVP|PP=unmv",
+                   "SBAR <, IN|DT < (S < (NP=unmv !$,, VP))",
+                   "S < (VP <+(VP) (VB|VBD|VBN|VBZ < be|being|been|is|are|was|were|am) <+(VP) (S << NP|ADJP|VP|ADVP|PP=unmv))",
+                   "NP << (PP=unmv !< (IN < of|about))",
+                   "PP << PP=unmv",
+                   "NP $ VP << PP=unmv",
+                   "SBAR=unmv [ !> VP | $-- /,/ | < RB ]",
+                   "SBAR=unmv !< WHNP < (/ˆ[ˆS].*/ !<< that|whether|how)",
+                   "NP=unmv < EX",
+                   "/ˆS/ < ‘‘ << NP|ADJP|VP|ADVP|PP=unmv",
+                   "PP=unmv !< NP",
+                   "NP=unmv $ @NP",
+                   "NP|PP|ADJP|ADVP << NP|ADJP|VP|ADVP|PP=unmv",
+                   "@UNMV << NP|ADJP|VP|ADVP|PP=unmv"]
+                   
+
+
 def extract_answer_phrases(text):
     
     classpath = "/home/johann/Studium/QMD/stanford-tregex-2018-02-27/stanford-tregex-3.9.1.jar" + ":" + "/home/johann/Studium/QMD/stanford-parser-full-2018-02-27/stanford-parser.jar" + ":" + "/home/johann/Studium/QMD/stanford-parser-full-2018-02-27/stanford-parser-3.9.1-javadoc.jar" + ":" + "/home/johann/Studium/QMD/stanford-parser-full-2018-02-27/stanford-parser-3.9.1-models.jar"
@@ -24,18 +47,20 @@ def extract_answer_phrases(text):
 
     phrases = get_all_phrases(tree)
 
-    
     TregexPattern = jpype.JPackage("edu").stanford.nlp.trees.tregex.TregexPattern
-    #pattern = TregexPattern.compile("SBAR < WHADVP << WRB|S|NP|ADJP|VP|ADVP|PP=unmv")
-    pattern = TregexPattern.compile("S=unmv")
 
-    potential_phrases = remove_unmvs(tree, pattern, phrases)
-    max_answer_phrase = find_longest(potential_phrases)
+    for i, pattern_string in enumerate(tregex_patterns):
+        pattern = TregexPattern.compile(pattern_string)
+        phrases = remove_unmvs(tree, pattern, phrases)
+
+    max_answer_phrase = find_longest(phrases)
     max_answer_phrase = list(map(str, max_answer_phrase))
     
     jpype.shutdownJVM()
 
-
+    if max_answer_phrase is None:
+        return text
+    
     return max_answer_phrase
 
 
@@ -65,20 +90,30 @@ def get_all_phrases(tree):
     return phrases
 
 
+def find_subphrases(phrase):
+    subphrases = []
+
+    for i in range(len(phrase)):
+        phrase_i = list(phrase)
+
+        while len(phrase_i) >= i:
+            subphrase = phrase_i[:i+1]
+            phrase_i = phrase_i[1:]
+            subphrases.append(subphrase)
+
+    return subphrases
     
 
 def remove_unmvs(tree, pattern, phrases):
     matcher = pattern.matcher(tree)
 
-    if matcher.matches():
+    while matcher.find():
         unmv = matcher.getNode("unmv")
+        if unmv is None:
+            continue
         unmv_phrase = unmv.getLeaves()
         phrases.remove(unmv_phrase)
 
-    children = tree.children()
-
-    for child in children:
-        phrases = remove_unmvs(child, pattern, phrases)
 
     return phrases
     
