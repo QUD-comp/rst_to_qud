@@ -75,7 +75,7 @@ def build_tree(nodes, root):
         child_tree = build_tree(nodes, child)
         node.add_child(child_tree)
 
-    satellites = find_satellites(nodes, root)
+    satellites_left, satellites_right = find_satellites(nodes, root)
 
     for satellite in satellites:
         relname = satellite[0].attrib["relname"]
@@ -187,8 +187,10 @@ def find_satellites(nodes, nucleus):
 
     Returns
     -------
-    satellites : [(xml.etree.ElementTree.Element, int)]
-        satellites of nucleus
+    satellites_left : [(xml.etree.ElementTree.Element, int)]
+        satellites to the left of nucleus
+    satellites_right : [(xml.etree.ElementTree.Element, int)]
+        satellites to the right of nucleus
     """
     nucleus_id = nucleus[0].attrib["id"]
 
@@ -207,9 +209,57 @@ def find_satellites(nodes, nucleus):
     
     satellites_and_children = filter(parent_filter, nodes)
     satellites = list(filter(relname_filter, satellites_and_children))
-    satellites = reorder_children(satellites, nodes)
+    satellites_left, satellites_right = reorder_satellites(satellites, nodes, root)
     
-    return satellites
+    return satellites_left, satellites_right
+
+
+def reorder_satellites(satellites, nodes, nucleus):
+    """
+    Reorder xml representations of satellites of one node according to the edus dominated by them
+    and order them into lists according to their position relative to the nucleus.
+
+    Parameters
+    ----------
+    satellites : [(xml.etree.ElementTree.Element, int)]
+        list to be reordered
+    nodes : [(xml.etree.ElementTree.Element, int)]
+        list of all nodes in tree
+    
+    Returns
+    -------
+    satellites_left : [(xml.etree.ElementTree.Element, int)]
+        reordered list of satellites to the left of the nucleus
+    satellites_right : [(xml.etree.ElementTree.Element, int)]
+        reordered list of satellites to the right of the nucleus
+    """
+    
+
+    def find_edu_number(node):
+        if not node[1] is None:
+            return node
+        parent_id = node[0].attrib["id"]
+        edu_number = 0
+        for n in nodes:
+            attribs = n[0].attrib
+            if "parent" in attribs.keys():
+                if attribs["parent"] == parent_id and attribs["relname"] in relations.multi_nuc:
+                    edu_number = find_edu_number(n)[1]
+
+        return (node[0], edu_number)
+    
+    satellites = list(map(find_edu_number, satellites))
+
+    nucleus_pos = find_edu_number(nucleus)
+
+    snd = lambda x : x[1]
+    left = lambda x : x[0] < nucleus_pos
+    right = lambda x : x[0] > nucleus_pos
+
+    satellites_left = sorted(filter(left, satellites), key=snd)
+    satellites_right = sorted(filter(right, satellites), key=snd)
+    
+    return satellites_left, satellites_right
 
 
 def find_span_children(nodes, parent):

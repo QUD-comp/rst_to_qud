@@ -13,8 +13,13 @@ class Rst_Node:
         contains the nucleus of that relation. The relation type is None in that case.
         If self is the nucleus of a mononuclear relation, the list is empty 
         and the relation type is None.
-    satellites: [(Rst_Node, String)]
-        List of tuples representing the satellites in a mononuclear relation.
+    satellites_left: [(Rst_Node, String)]
+        List of tuples representing the satellites to the left of the nucleus 
+        in a mononuclear relation.
+        The first element of the tuple is a satellite, the second one is the relation type.
+    satellites_right: [(Rst_Node, String)]
+        List of tuples representing the satellites to the right of the nucleus 
+        in a mononuclear relation.
         The first element of the tuple is a satellite, the second one is the relation type.
     """
     
@@ -23,7 +28,8 @@ class Rst_Node:
         self.edu_num = edu_num
 
         self.children = ([], multi_nuc_relation)
-        self.satellites = []
+        self.satellites_left = []
+        self.satellites_right = []
 
     def add_child(self, child):
         """Add an Rst_Node to self.children."""
@@ -34,11 +40,17 @@ class Rst_Node:
         child_nodes.append(child)
         self.children = (child_nodes, relname)
 
-    def add_satellite(self, satellite, relname):
+    def add_satellite_left(self, satellite, relname):
         """Add an Rst_Node as satellite with relation relname."""
         if not isinstance(satellite,Rst_Node):
             raise TypeError("satellite must be an Rst_Node")
 
-        self.satellites.append((satellite, relname))
+        self.satellites_left.append((satellite, relname))
 
+    def add_satellite_right(self, satellite, relname):
+        """Add an Rst_Node as satellite with relation relname."""
+        if not isinstance(satellite,Rst_Node):
+            raise TypeError("satellite must be an Rst_Node")
+
+        self.satellites_right.append((satellite, relname))
     
