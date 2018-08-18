@@ -77,10 +77,14 @@ def build_tree(nodes, root):
 
     satellites_left, satellites_right = find_satellites(nodes, root)
 
-    for satellite in satellites:
+    for satellite in satellites_left:
         relname = satellite[0].attrib["relname"]
         satellite_tree = build_tree(nodes, satellite)
-        node.add_satellite(satellite_tree, relname)
+        node.add_satellite_left(satellite_tree, relname)
+    for satellite in satellites_right:
+        relname = satellite[0].attrib["relname"]
+        satellite_tree = build_tree(nodes, satellite)
+        node.add_satellite_right(satellite_tree, relname)
         
     return node
 
@@ -225,6 +229,7 @@ def reorder_satellites(satellites, nodes, nucleus):
         list to be reordered
     nodes : [(xml.etree.ElementTree.Element, int)]
         list of all nodes in tree
+    nucleus : 
     
     Returns
     -------
