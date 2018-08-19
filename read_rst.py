@@ -23,11 +23,18 @@ def read_rst_from_microtexts(filename):
     xml_body = xml_root.find("body")
 
     segments = xml_body.findall("segment")
-    segments_numbered = zip(segments, range(len(segments)))
+    segments_numbered = zip(segments, list(range(len(segments))))
     groups = xml_body.findall("group")
     groups_numbered = zip(groups, [None] * len(groups))
 
+    #print(list(segments_numbered))
+    #print(list(range(len(segments))))
+    #for node in segments_numbered:
+    #    print("Hallo")
+    #    print(node.text)
+
     nodes = list(segments_numbered) + list(groups_numbered)
+
     
     root = list(filter(lambda x : not 'parent' in x[0].attrib.keys(), nodes))[0]
     
@@ -196,6 +203,7 @@ def find_satellites(nodes, nucleus):
     satellites_right : [(xml.etree.ElementTree.Element, int)]
         satellites to the right of nucleus
     """
+
     nucleus_id = nucleus[0].attrib["id"]
 
     def parent_filter(n):
@@ -208,12 +216,13 @@ def find_satellites(nodes, nucleus):
         if not "relname" in n[0].attrib.keys():
             return False
         else:
+            #print(n[0].attrib["relname"])
             return n[0].attrib["relname"] in relations.mono_nuc
         
     
     satellites_and_children = filter(parent_filter, nodes)
     satellites = list(filter(relname_filter, satellites_and_children))
-    satellites_left, satellites_right = reorder_satellites(satellites, nodes, root)
+    satellites_left, satellites_right = reorder_satellites(satellites, nodes, nucleus)
     
     return satellites_left, satellites_right
 
@@ -238,28 +247,40 @@ def reorder_satellites(satellites, nodes, nucleus):
     satellites_right : [(xml.etree.ElementTree.Element, int)]
         reordered list of satellites to the right of the nucleus
     """
-    
+    print(satellites)
+    print(nucleus)
+    #for node in nodes:
+    #    print(node[0].text)
+    #    print(node[1])
+    #for node in satellites:
+    #    print(node[0].text)
+    #    print(node[1])
 
     def find_edu_number(node):
         if not node[1] is None:
+            #print("Hallo")
+            #print(node[0].text)
+            #print(node[1])
             return node
         parent_id = node[0].attrib["id"]
         edu_number = 0
         for n in nodes:
             attribs = n[0].attrib
             if "parent" in attribs.keys():
-                if attribs["parent"] == parent_id and attribs["relname"] in relations.multi_nuc:
+                if attribs["parent"] == parent_id:# and attribs["relname"] in relations.multi_nuc:
                     edu_number = find_edu_number(n)[1]
 
         return (node[0], edu_number)
-    
-    satellites = list(map(find_edu_number, satellites))
 
+    satellites = list(map(find_edu_number, satellites))
+    #print(satellites)
     nucleus_pos = find_edu_number(nucleus)
+    #print("nucleus_pos")
+    #print(nucleus_pos)
 
     snd = lambda x : x[1]
-    left = lambda x : x[0] < nucleus_pos
-    right = lambda x : x[0] > nucleus_pos
+    left = lambda x : x[1] < nucleus_pos[1]
+    right = lambda x : x[1] > nucleus_pos[1]
 
     satellites_left = sorted(filter(left, satellites), key=snd)
     satellites_right = sorted(filter(right, satellites), key=snd)

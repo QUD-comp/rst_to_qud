@@ -119,4 +119,3 @@ def remove_unmvs(tree, pattern, phrases):
     
     
 
-print(extract_answer_phrases("Darwin studied how species evolve."))
