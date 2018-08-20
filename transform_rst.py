@@ -22,6 +22,7 @@ def transform(rst_node, root=False):
 
     if root:
         qud_node = qud_tree.Qud_Node(qud="What is the way things are?")
+        print(rst_node.children[0][0].satellites_right)
         for child in transform(rst_node):
             qud_node.add_child(child)
         #qud_node.add_child(transform(rst_node)[0])
@@ -29,7 +30,7 @@ def transform(rst_node, root=False):
         return qud_node
         
         
-        
+    
     
     if len(rst_node.satellites_left) > 0:
         print("left")
@@ -37,18 +38,17 @@ def transform(rst_node, root=False):
         sat, rel = sats[(len(sats)-1)]
         rst_node_copy = rst_node
         rst_node_copy.satellites_left = sats[:len(sats)-1]
-
+        rst_node.print_tree()
         qud = find_qud(rel, sat, right = False)
-
         qud_node = qud_tree.Qud_Node(qud=qud)
 
         nuc_children = transform(rst_node_copy)
         sat_children = transform(sat)
 
         for child in nuc_children:
-            qud_node.add_child(nuc_child)
+            qud_node.add_child(child)
         for child in sat_children:
-            qud_node.add_child(sat_child)
+            qud_node.add_child(child)
 
         return [qud_node]
     
@@ -64,12 +64,20 @@ def transform(rst_node, root=False):
         qud_node = qud_tree.Qud_Node(qud=qud)
 
         nuc_children = transform(rst_node_copy)
-        sat_children = transform(sat)
 
+        sat_children_lists = transform(sat)
+        sat_children = []
+        for sublist in sat_children_lists:
+            for child in sublist:
+                sat_children.append(child)
+        
+        print(sat_children)
         for child in nuc_children:
-            qud_node.add_child(nuc_child)
+            qud_node.add_child(child)
         for child in sat_children:
-            qud_node.add_child(sat_child)
+            print(child)
+            print(type(child))
+            qud_node.add_child(child)
 
         return [qud_node]
 
