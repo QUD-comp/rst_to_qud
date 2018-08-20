@@ -247,8 +247,8 @@ def reorder_satellites(satellites, nodes, nucleus):
     satellites_right : [(xml.etree.ElementTree.Element, int)]
         reordered list of satellites to the right of the nucleus
     """
-    print(satellites)
-    print(nucleus)
+    #print(satellites)
+    #print(nucleus)
     #for node in nodes:
     #    print(node[0].text)
     #    print(node[1])
