@@ -165,15 +165,18 @@ def reorder_children(children, nodes):
 
     def find_edu_number(node):
         if not node[1] is None:
+            #print(node[0].text)
+            #print(node[1])
             return node
         parent_id = node[0].attrib["id"]
         edu_number = 0
         for n in nodes:
             attribs = n[0].attrib
             if "parent" in attribs.keys():
-                if attribs["parent"] == parent_id and attribs["relname"] in relations.multi_nuc:
+                if attribs["parent"] == parent_id:# and attribs["relname"] in relations.multi_nuc:
                     edu_number = find_edu_number(n)[1]
-
+        #print(node[0].text)
+        #print(edu_number)
         return (node[0], edu_number)
     
     children = list(map(find_edu_number, children))

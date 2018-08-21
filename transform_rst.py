@@ -2,6 +2,7 @@ import rst_tree
 import relations
 import extract_answer_phrases as eap
 import qud_tree
+import copy
 
 def transform(rst_node, root=False):
     """
@@ -27,7 +28,7 @@ def transform(rst_node, root=False):
             qud_node.add_child(child)
         #qud_node.add_child(transform(rst_node)[0])
 
-        return qud_node
+        return [qud_node]
         
         
     
@@ -36,27 +37,42 @@ def transform(rst_node, root=False):
         print("left")
         sats = rst_node.satellites_left
         sat, rel = sats[(len(sats)-1)]
-        rst_node_copy = rst_node
+        rst_node_copy = copy.copy(rst_node)
         rst_node_copy.satellites_left = sats[:len(sats)-1]
-        rst_node.print_tree()
+        #rst_node.print_tree()
         qud = find_qud(rel, sat, right = False)
         qud_node = qud_tree.Qud_Node(qud=qud)
 
-        nuc_children = transform(rst_node_copy)
-        sat_children = transform(sat)
 
+        sat_children = transform(sat)
+        #sat_children_lists = transform(sat)
+        #sat_children = []
+        #for sublist in sat_children_lists:
+        #    for child in sublist:
+        #        sat_children.append(child)
+
+
+        nuc_children = transform(rst_node_copy)
         for child in nuc_children:
             qud_node.add_child(child)
-        for child in sat_children:
-            qud_node.add_child(child)
 
-        return [qud_node]
+        #for child in sat_children:
+        #    qud_node.add_child(child)
+
+        return sat_children + [qud_node]
     
     if len(rst_node.satellites_right) > 0:
         print("right")
         sats = rst_node.satellites_right
+
+        print("Hello")
+        print(rst_node.edu)
+        
         sat, rel = sats[(len(sats)-1)]
-        rst_node_copy = rst_node
+
+        print(sat.edu)
+        
+        rst_node_copy = copy.copy(rst_node)
         rst_node_copy.satellites_right = sats[:len(sats)-1]
 
         qud = find_qud(rel, rst_node_copy, right = True)
@@ -65,21 +81,22 @@ def transform(rst_node, root=False):
 
         nuc_children = transform(rst_node_copy)
 
-        sat_children_lists = transform(sat)
-        sat_children = []
-        for sublist in sat_children_lists:
-            for child in sublist:
-                sat_children.append(child)
+        sat_children = transform(sat)
+        #print(sat_children)
+        #sat_children = []
+        #for sublist in sat_children_lists:
+        #    for child in sublist:
+        #        sat_children.append(child)
         
-        print(sat_children)
-        for child in nuc_children:
-            qud_node.add_child(child)
+        #print(sat_children)
         for child in sat_children:
-            print(child)
-            print(type(child))
             qud_node.add_child(child)
+        #for child in sat_children:
+        #    print(child)
+        #    print(type(child))
+        #    qud_node.add_child(child)
 
-        return [qud_node]
+        return nuc_children + [qud_node]
 
     children, multi_nuc_type = rst_node.children
 
@@ -103,7 +120,8 @@ def transform(rst_node, root=False):
         #it's a multi-nuc, not a span
         transformed = []
         for child in children:
-            transformed.append(transform(child))
+            for element in transform(child):
+                transformed.append(element)
 
         return transformed
     else:
@@ -117,10 +135,10 @@ def transform(rst_node, root=False):
             qud_node = qud_tree.Qud_Node(qud=qud)
             qud_node.children += transform(child)
 
-            transformed.append(child)
+            transformed.append(qud_node)
 
         return transformed
-    
+
             
 def find_qud(relation, subtree, right):
     """
