@@ -1,6 +1,7 @@
 from nltk.parse import stanford
 from nltk.tokenize import sent_tokenize, word_tokenize
 import jpype
+import rst_tree
 
 #Tregex patterns from (Heilman, 2011)
 #marking unmovable phrases
@@ -23,6 +24,81 @@ tregex_patterns = ["VP < (S=unmv $,, /,/)",
                    "NP|PP|ADJP|ADVP << NP|ADJP|VP|ADVP|PP=unmv",
                    "@UNMV << NP|ADJP|VP|ADVP|PP=unmv"]
                    
+
+def find_question_content(rst):
+    """
+    Extract the answer phrase from the leaves of an rst tree, to use in a qud.
+
+    Parameter
+    ---------
+    rst : Rst_Node
+        tree from which the phrase is to be extracted
+    
+    Return
+    ------
+    question_content : String
+        extracted phrase
+    """
+
+    print(rst)
+    if not rst.edu is None:
+        text = rst.edu
+        question_content_list = extract_answer_phrases(text)
+        question_content = " ".join(question_content_list)
+        return question_content
+
+    if len(rst.children[0]) > 1:
+        #multinuc
+        text = _find_text(rst.children[0])
+        question_content_list = extract_answer_phrases(text)
+        question_content = " ".join(question_content_list)
+        return question_content
+
+    if len(rst.children) == 0:
+        raise Error("RST node is neither EDU nor does it have children.")
+
+    #span
+    question_content = find_question_content(rst.children[0][0])
+
+    return question_content
+
+
+def _find_text(rsts):
+    """
+    Find EDUs dominated by a list of nodes.
+
+    Parameter
+    ---------
+    rsts : [Rst_Node]
+        list of nodes of which the EDUs have to be found
+    
+    Return
+    ------
+    text : String
+        combined EDUs
+    """
+
+    text = ""
+    print(rsts)
+    for rst in rsts:
+        print(rst)
+        text += _find_text_single(rst) + " "
+
+    text = text[:-1]
+        
+    return text
+        
+def _find_text_single(rst):
+    text = ""
+    if not rst.edu is None:
+        text += rst.edu
+    for sat, _ in rst.satellites_left:
+        text += " " + _find_text_single(sat)
+    for child in rst.children[0]:
+        text += " " + _find_text_single(child)
+    for sat, _ in rst.satellites_right:
+        text += " " + _find_text_single(sat)
+    return text
 
 
 def extract_answer_phrases(text):
@@ -61,9 +137,6 @@ def extract_answer_phrases(text):
     max_answer_phrase = list(map(str, max_answer_phrase))
 
     
-    #jpype.shutdownJVM()
-
-
     if max_answer_phrase is None:
         return text
     

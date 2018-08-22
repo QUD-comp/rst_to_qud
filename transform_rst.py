@@ -4,7 +4,7 @@ import extract_answer_phrases as eap
 import qud_tree
 import copy
 
-def transform(rst_node, root=False):
+def transform(rst_node, root=True):
     """
     Transform an rst tree recursively into a qud tree.
 
@@ -17,61 +17,43 @@ def transform(rst_node, root=False):
 
     Returns
     -------
-    qud_node : Qud_Node
+    qud_nodes : [Qud_Node]
         transformed tree
     """
 
     if root:
         qud_node = qud_tree.Qud_Node(qud="What is the way things are?")
-        print(rst_node.children[0][0].satellites_right)
-        for child in transform(rst_node):
+        for child in transform(rst_node, root=False):
             qud_node.add_child(child)
-        #qud_node.add_child(transform(rst_node)[0])
 
         return [qud_node]
-        
-        
-    
-    
+
+
+
+
     if len(rst_node.satellites_left) > 0:
-        print("left")
         sats = rst_node.satellites_left
         sat, rel = sats[(len(sats)-1)]
         rst_node_copy = copy.copy(rst_node)
         rst_node_copy.satellites_left = sats[:len(sats)-1]
-        #rst_node.print_tree()
+
         qud = find_qud(rel, sat, right = False)
         qud_node = qud_tree.Qud_Node(qud=qud)
 
 
-        sat_children = transform(sat)
-        #sat_children_lists = transform(sat)
-        #sat_children = []
-        #for sublist in sat_children_lists:
-        #    for child in sublist:
-        #        sat_children.append(child)
+        sat_children = transform(sat, root=False)
 
-
-        nuc_children = transform(rst_node_copy)
+        nuc_children = transform(rst_node_copy, root=False)
         for child in nuc_children:
             qud_node.add_child(child)
 
-        #for child in sat_children:
-        #    qud_node.add_child(child)
-
         return sat_children + [qud_node]
-    
+
     if len(rst_node.satellites_right) > 0:
-        print("right")
         sats = rst_node.satellites_right
 
-        print("Hello")
-        print(rst_node.edu)
-        
         sat, rel = sats[(len(sats)-1)]
 
-        print(sat.edu)
-        
         rst_node_copy = copy.copy(rst_node)
         rst_node_copy.satellites_right = sats[:len(sats)-1]
 
@@ -79,22 +61,12 @@ def transform(rst_node, root=False):
 
         qud_node = qud_tree.Qud_Node(qud=qud)
 
-        nuc_children = transform(rst_node_copy)
+        nuc_children = transform(rst_node_copy, root=False)
 
-        sat_children = transform(sat)
-        #print(sat_children)
-        #sat_children = []
-        #for sublist in sat_children_lists:
-        #    for child in sublist:
-        #        sat_children.append(child)
-        
-        #print(sat_children)
+        sat_children = transform(sat, root=False)
+
         for child in sat_children:
             qud_node.add_child(child)
-        #for child in sat_children:
-        #    print(child)
-        #    print(type(child))
-        #    qud_node.add_child(child)
 
         return nuc_children + [qud_node]
 
@@ -102,12 +74,10 @@ def transform(rst_node, root=False):
 
     if multi_nuc_type is None and children != []:
         #span node
-        print("span")
-        return transform(children[0])
+        return transform(children[0], root=False)
 
     if multi_nuc_type is None and children == []:
         #leaf
-        print("leaf")
         edu = rst_node.edu
 
         qud_node = qud_tree.Qud_Node(edu=edu)
@@ -116,24 +86,23 @@ def transform(rst_node, root=False):
 
     
     if multi_nuc_type != "restatement_mn":
-        print("multinuc")
         #it's a multi-nuc, not a span
         transformed = []
         for child in children:
-            for element in transform(child):
+            for element in transform(child, root=False):
                 transformed.append(element)
 
         return transformed
     else:
         transformed = []
 
-        transformed.append(children[0])
+        transformed.append(transform(children[0], root=False))
 
         for i, child in enumerate(children[1:]):
             qud = find_qud("restatement", children[i], right=True)
 
             qud_node = qud_tree.Qud_Node(qud=qud)
-            qud_node.children += transform(child)
+            qud_node.children += transform(child, root=False)
 
             transformed.append(qud_node)
 
@@ -154,9 +123,11 @@ def find_qud(relation, subtree, right):
         Is true if satellite is to the right of the nucleus in the relation.
     """
 
-    text = subtree.get_text()
+    #text = subtree.get_text()
 
-    question_content = eap.extract_answer_phrases(text)
+    #question_content = eap.extract_answer_phrases(text)
+    question_content = eap.find_question_content(subtree)
+    print(question_content)
 
     if right:
         part1 = question_frame_right[relation][0]
@@ -166,7 +137,7 @@ def find_qud(relation, subtree, right):
         part2 = question_frame_left[relation][1]
 
 
-    qud = part1 + text + part2
+    qud = part1 + question_content + part2
 
     return qud
 
@@ -177,7 +148,7 @@ def find_qud(relation, subtree, right):
 question_frame_right = {
     "antithesis" : ("Does anything speak against ", "?"),
     "background" : ("What is the background to ", "?"),
-    #"circumstance" : (
+    "circumstance" : ("What are the circumstances around ", "?"),
     "concession" : ("Is it always true that ", "?"),
     "condition" : ("What is necessary for ", "?"),
     "elaboration" : ("What about ", "?"),
@@ -194,13 +165,13 @@ question_frame_right = {
     "otherwise" : ("What can't happen if ", "?"),
     #"preparation" -> can't happen with satellite on the right-hand side
     "purpose" : ("What does ", " achieve?"),
-    #"restatement"
+    "restatement" : ("What is another way to say " "?"),
     "solutionhood" : ("What problem does ", " solve?"),
     "summary" : ("How can ", " be summed up?"),
     "unconditional" : ("What could affect ", ", but doesn't?"),
     "unless" : ("What would prevent ", " from happening?"),
     "unstated-relation" : ("What about ", "?"),
-    #"evaluation-n" : ("
+    "evaluation-n" : ("How do you evaluate ", "?"),
     "reason" : ("What could make one think that ", "?")
     }
 
@@ -208,13 +179,13 @@ question_frame_right = {
 question_frame_left = {
     "antithesis" : ("What does speak against ", "?"),
     "background" : ("What is ", " the background to?"),
-    #"circumstance" : (
+    "circumstance" : ("What happens under this cirsumstance ", "?"),
     "concession" : ("To what is ", " a concession?"),
     "condition" : ("For what is ", " a condition?"),
-    #"elaboration" : ("What about ", "?"),
-    #"e-elaboration" : ("What about ", "?"),
-    #"enablement" : ("How can we do ", "?"),
-    #"evaluation-s" : ("Is ", " good?"),
+    #"elaboration" : ("What about ", "?"), -> can't happen with satellite on the left-hand side
+    #"e-elaboration" : ("What about ", "?"), -> can't happen with satellite on the left-hand side
+    "enablement" : ("What can we do because of ", "?"),
+    "evaluation-s" : ("What is ", " an evaluation of?"),
     "evidence" : ("What does ", " proof?"),
     "interpretation" : ("What is ", " an interpretation for?"),
     "justify" : ("Is there a justification for ", "?"),
@@ -222,10 +193,10 @@ question_frame_left = {
     "motivation" : ("What should one do because of ", "?"),
     "cause" : ("What happens ", " because of?"),
     "result" : ("Why does ", " happen?"),
-    #"otherwise" : ("What can't happen if ", "?"),
+    "otherwise" : ("What can't happen if ", "?"),
     "preparation" : ("What is ", " a preparation for?"),
     "purpose" : ("How can ", " be achieved?"),
-    #"restatement"
+    "restatement" : ("What is another way to say " "?"),
     "solutionhood" : ("How can ", " be solved?"),
     "summary" : ("What is ", " a summary for?"),
     "unconditional" : ("What does ", " not have an effect on?"),
@@ -236,27 +207,6 @@ question_frame_left = {
     }
     
 
-def print_qud_tree(tree, indent=0):
-    """
-    Print qud tree
-
-    Parameters
-    ----------
-    tree : Qud_Node
-        Tree to be printed.
-    indent : int
-        level of node in tree
-    """
-    
-    if tree.children == []:
-        out_str = indent * ">" + tree.edu
-    else:
-        out_str = indent * ">" + tree.qud
-
-    print(out_str)
-
-    for child in tree.children:
-        print_qud_tree(child, indent+1)
 
 
 
