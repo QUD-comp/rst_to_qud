@@ -34,6 +34,9 @@ def read_rst_from_microtexts(filename):
     #    print(node.text)
 
     nodes = list(segments_numbered) + list(groups_numbered)
+    #for node_xml, num in nodes:
+    #    print(node_xml.text)
+    #    print(num)
 
     
     root = list(filter(lambda x : not 'parent' in x[0].attrib.keys(), nodes))[0]
@@ -162,22 +165,38 @@ def reorder_children(children, nodes):
         reordered list
     """
     
-
     def find_edu_number(node):
         if not node[1] is None:
-            #print(node[0].text)
-            #print(node[1])
             return node
         parent_id = node[0].attrib["id"]
         edu_number = 0
+        numbers = []
         for n in nodes:
             attribs = n[0].attrib
             if "parent" in attribs.keys():
-                if attribs["parent"] == parent_id:# and attribs["relname"] in relations.multi_nuc:
-                    edu_number = find_edu_number(n)[1]
-        #print(node[0].text)
-        #print(edu_number)
+                #find edu numbers of satelites and children
+                if attribs["parent"] == parent_id:
+                    numbers.append(find_edu_number(n)[1])
+        #use edu number of leftmost satellite/child
+        edu_number = min(numbers) 
+
         return (node[0], edu_number)
+
+    #def find_edu_number(node):
+    #    if not node[1] is None:
+    #        #print(node[0].text)
+    #        #print(node[1])
+    #        return node
+    #    parent_id = node[0].attrib["id"]
+    #    edu_number = 0
+    #    for n in nodes:
+    #        attribs = n[0].attrib
+    #        if "parent" in attribs.keys():
+    #            if attribs["parent"] == parent_id:# and attribs["relname"] in relations.multi_nuc:
+    #                edu_number = find_edu_number(n)[1]
+    #    #print(node[0].text)
+    #    #print(edu_number)
+    #    return (node[0], edu_number)
     
     children = list(map(find_edu_number, children))
     snd = lambda x : x[1]
@@ -261,28 +280,29 @@ def reorder_satellites(satellites, nodes, nucleus):
 
     def find_edu_number(node):
         if not node[1] is None:
-            #print("Hallo")
-            #print(node[0].text)
-            #print(node[1])
             return node
         parent_id = node[0].attrib["id"]
         edu_number = 0
+        numbers = []
         for n in nodes:
             attribs = n[0].attrib
             if "parent" in attribs.keys():
+                #find edu numbers of satelites and children
                 if attribs["parent"] == parent_id:# and attribs["relname"] in relations.multi_nuc:
-                    edu_number = find_edu_number(n)[1]
+                    numbers.append(find_edu_number(n)[1])
+        #use edu number of leftmost satellite/child
+        edu_number = min(numbers) 
 
         return (node[0], edu_number)
 
     satellites = list(map(find_edu_number, satellites))
-    #print(satellites)
+    print(satellites)
     nucleus_pos = find_edu_number(nucleus)
-    #print("nucleus_pos")
+    #print(nucleus[0].text)
     #print(nucleus_pos)
 
     snd = lambda x : x[1]
-    left = lambda x : x[1] < nucleus_pos[1]
+    left = lambda x : x[1] <= nucleus_pos[1]
     right = lambda x : x[1] > nucleus_pos[1]
 
     satellites_left = sorted(filter(left, satellites), key=snd)
