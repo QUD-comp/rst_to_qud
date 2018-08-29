@@ -1,13 +1,12 @@
-from nltk.parse import stanford
 from nltk.tokenize import sent_tokenize, word_tokenize
 import jpype
 import rst_tree
-import copy
 from pattern.en import conjugate, PROGRESSIVE
+import os
 
 #Tregex patterns from (Heilman, 2011)
 #marking unmovable phrases
-tregex_patterns = ["VP < (S=unmv $,, /,/)",
+heilman_patterns = ["VP < (S=unmv $,, /,/)",
                    "S < PP|ADJP|ADVP|S|SBAR=unmv > ROOT",
                    "/\\.*/ < CC << NP|ADJP|VP|ADVP|PP=unmv",
                    "SBAR < (IN|DT < /[ˆthat]/) << NP|PP=unmv",
@@ -25,7 +24,6 @@ tregex_patterns = ["VP < (S=unmv $,, /,/)",
                    "NP=unmv $ @NP",
                    "NP|PP|ADJP|ADVP << NP|ADJP|VP|ADVP|PP=unmv",
                    "@UNMV << NP|ADJP|VP|ADVP|PP=unmv"]
-                   
 
 def find_question_content(rst):
     """
@@ -43,15 +41,17 @@ def find_question_content(rst):
     """
 
     if not rst.edu is None:
+        print("nuc")
         text = rst.edu
-        question_content_list = extract_answer_phrases(text)
+        question_content_list = extract_from_text(text, single=True)
         question_content = " ".join(question_content_list)
         return question_content
 
     if len(rst.children[0]) > 1:
+        print("multi")
         #multinuc
         text = _find_text(rst.children[0])
-        question_content_list = extract_answer_phrases(text)
+        question_content_list = extract_from_text(text, single=False)
         question_content = " ".join(question_content_list)
         return question_content
 
@@ -59,6 +59,7 @@ def find_question_content(rst):
         raise Error("RST node is neither EDU nor does it have children.")
 
     #span
+    print("span")
     question_content = find_question_content(rst.children[0][0])
 
     return question_content
@@ -86,7 +87,7 @@ def _find_text(rsts):
     text = text[:-1]
         
     return text
-        
+
 def _find_text_single(rst):
     text = ""
     if not rst.edu is None:
@@ -100,14 +101,15 @@ def _find_text_single(rst):
     return text
 
 
-def extract_answer_phrases(text):
-    
-    classpath = "/home/johann/Studium/QMD/stanford-tregex-2018-02-27/stanford-tregex-3.9.1.jar" + ":" + "/home/johann/Studium/QMD/stanford-parser-full-2018-02-27/stanford-parser.jar" + ":" + "/home/johann/Studium/QMD/stanford-parser-full-2018-02-27/stanford-parser-3.9.1-javadoc.jar" + ":" + "/home/johann/Studium/QMD/stanford-parser-full-2018-02-27/stanford-parser-3.9.1-models.jar"
+def extract_from_text(text, single=True):
 
-    
+    classpath = os.environ['CLASSPATH']
+    if classpath is None:
+        raise Error("Java classpath not set")
     if not jpype.isJVMStarted():
         jpype.startJVM(jpype.getDefaultJVMPath(), "-Djava.class.path=%s" % classpath)
 
+    
     words = word_tokenize(text)
 
     text_list = jpype.java.util.ArrayList()
@@ -118,17 +120,24 @@ def extract_answer_phrases(text):
 
     StanfordParser = jpype.JPackage("edu").stanford.nlp.parser.lexparser.LexicalizedParser.loadModel("edu/stanford/nlp/models/lexparser/englishPCFG.ser.gz")
     tree = StanfordParser.parse(text_list)
-    print(tree)
-    subtrees = tree.subTreeList()
+
+    if single:
+        return extract_from_single(tree)
+    return ["that"]#extract_from_multinuc(tree)
 
 
+def extract_from_multinuc(tree):#, TregexPattern):
     TregexPattern = jpype.JPackage("edu").stanford.nlp.trees.tregex.TregexPattern
 
-    for i, pattern_string in enumerate(tregex_patterns):
+    subtrees = tree.subTreeList()
+
+    for i, pattern_string in enumerate(heilman_patterns):
         pattern = TregexPattern.compile(pattern_string)
         trees = remove_unmvs(subtrees, pattern)
 
     snd_longest = second_longest(trees)
+    print("snd_longest")
+    print(list(map(str, snd_longest.getLeaves())))
     siblings = snd_longest.siblings(tree)
 
     if siblings.isEmpty():
@@ -136,16 +145,76 @@ def extract_answer_phrases(text):
 
     subject = extract_subject(siblings)
     rest = ingify(snd_longest)
+    print("subject")
+    print(subject)
+    print("rest")
+    print(rest)
 
     question_content = subject + rest
 
     return question_content
 
+def remove_unmvs(subtrees, pattern):
+    not_match = []
+    for tree in subtrees:
+        matcher = pattern.matcher(tree)
+        if not matcher.matches():
+            not_match.append(tree)
 
+    return not_match
+
+def second_longest(trees):
+    tuples = []
+    for tree in trees:
+        tuples.append((len(tree.getLeaves()), tree))
+    fst = lambda x: x[0]
+    tuples = sorted(tuples, key=fst, reverse=True)
+    
+    len_longest = tuples[0][0]
+
+    for length, tree in tuples:
+        if length < len_longest:
+            return tree
+    
+    return tuples[0][1]
+
+
+def extract_from_single(tree, gerund=True):#, TregexPattern):
+    pattern_string = "NP=nounp .. VP=verbp"
+    TregexPattern = jpype.JPackage("edu").stanford.nlp.trees.tregex.TregexPattern
+    pattern = TregexPattern.compile(pattern_string)
+    matcher = pattern.matcher(tree)
+
+    print(tree)
+
+    if matcher.find():
+        np_tree = matcher.getNode("nounp")
+        vp_tree = matcher.getNode("verbp")
+
+        subject = extract_subject([np_tree])
+        if gerund:
+            rest = ingify(vp_tree)
+        else:
+            rest = list(map(str, vp_tree.getLeaves()))
+
+        print("subject")
+        print(subject)
+        print("rest")
+        print(rest)
+
+        question_content = subject + rest
+        return question_content
+
+    print("gnurgl")
+    text = list(map(str, tree.getLeaves()))
+
+    return text
+
+        
 def extract_subject(trees):
     TregexPattern = jpype.JPackage("edu").stanford.nlp.trees.tregex.TregexPattern
     pattern = TregexPattern.compile("NP")
-    
+
     for tree in trees:
         matcher = pattern.matcher(tree)
         if matcher.find():
@@ -154,8 +223,8 @@ def extract_subject(trees):
             return words
 
     return []
-        
-    
+
+
 def ingify(tree):
 
     children = tree.getChildrenAsList()
@@ -179,37 +248,3 @@ def ingify(tree):
     words = [verb_progressive] + words
     
     return words
-    
-    
-    
-    
-
-
-def second_longest(trees):
-    tuples = []
-    for tree in trees:
-        tuples.append((len(tree.getLeaves()), tree))
-    fst = lambda x: x[0]
-    tuples = sorted(tuples, key=fst, reverse=True)
-    
-    len_longest = tuples[0][0]
-
-    for length, tree in tuples:
-        if length < len_longest:
-            return tree
-    
-    return tuples[0][1]
-
-    
-
-def remove_unmvs(subtrees, pattern):
-    not_match = []
-    for tree in subtrees:
-        matcher = pattern.matcher(tree)
-        if not matcher.matches():
-            not_match.append(tree)
-
-    return not_match
-    
-    
-

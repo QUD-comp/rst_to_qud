@@ -1,7 +1,6 @@
 import rst_tree
 import relations
-#import extract_answer_phrases as eap
-import extract2 as eap
+import extract_question_content as eqc
 import qud_tree
 import copy
 
@@ -124,10 +123,7 @@ def find_qud(relation, subtree, right):
         Is true if satellite is to the right of the nucleus in the relation.
     """
 
-    #text = subtree.get_text()
-
-    #question_content = eap.extract_answer_phrases(text)
-    question_content = eap.find_question_content(subtree)
+    question_content = eqc.find_question_content(subtree)
     print(question_content)
 
     if right:
