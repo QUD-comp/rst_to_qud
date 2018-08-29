@@ -4,26 +4,6 @@ import rst_tree
 from pattern.en import conjugate, PROGRESSIVE
 import os
 
-#Tregex patterns from (Heilman, 2011)
-#marking unmovable phrases
-heilman_patterns = ["VP < (S=unmv $,, /,/)",
-                   "S < PP|ADJP|ADVP|S|SBAR=unmv > ROOT",
-                   "/\\.*/ < CC << NP|ADJP|VP|ADVP|PP=unmv",
-                   "SBAR < (IN|DT < /[ˆthat]/) << NP|PP=unmv",
-                   "SBAR < /ˆWH.*P$/ << NP|ADJP|VP|ADVP|PP=unmv",
-                   "SBAR <, IN|DT < (S < (NP=unmv !$,, VP))",
-                   "S < (VP <+(VP) (VB|VBD|VBN|VBZ < be|being|been|is|are|was|were|am) <+(VP) (S << NP|ADJP|VP|ADVP|PP=unmv))",
-                   "NP << (PP=unmv !< (IN < of|about))",
-                   "PP << PP=unmv",
-                   "NP $ VP << PP=unmv",
-                   "SBAR=unmv [ !> VP | $-- /,/ | < RB ]",
-                   "SBAR=unmv !< WHNP < (/ˆ[ˆS].*/ !<< that|whether|how)",
-                   "NP=unmv < EX",
-                   "/ˆS/ < ‘‘ << NP|ADJP|VP|ADVP|PP=unmv",
-                   "PP=unmv !< NP",
-                   "NP=unmv $ @NP",
-                   "NP|PP|ADJP|ADVP << NP|ADJP|VP|ADVP|PP=unmv",
-                   "@UNMV << NP|ADJP|VP|ADVP|PP=unmv"]
 
 def find_question_content(rst):
     """
@@ -41,14 +21,12 @@ def find_question_content(rst):
     """
 
     if not rst.edu is None:
-        print("nuc")
         text = rst.edu
         question_content_list = extract_from_text(text, single=True)
         question_content = " ".join(question_content_list)
         return question_content
 
     if len(rst.children[0]) > 1:
-        print("multi")
         #multinuc
         text = _find_text(rst.children[0])
         question_content_list = extract_from_text(text, single=False)
@@ -59,7 +37,6 @@ def find_question_content(rst):
         raise Error("RST node is neither EDU nor does it have children.")
 
     #span
-    print("span")
     question_content = find_question_content(rst.children[0][0])
 
     return question_content
@@ -123,63 +100,10 @@ def extract_from_text(text, single=True):
 
     if single:
         return extract_from_single(tree)
-    return ["that"]#extract_from_multinuc(tree)
+    return ["that"]
 
 
-def extract_from_multinuc(tree):#, TregexPattern):
-    TregexPattern = jpype.JPackage("edu").stanford.nlp.trees.tregex.TregexPattern
-
-    subtrees = tree.subTreeList()
-
-    for i, pattern_string in enumerate(heilman_patterns):
-        pattern = TregexPattern.compile(pattern_string)
-        trees = remove_unmvs(subtrees, pattern)
-
-    snd_longest = second_longest(trees)
-    print("snd_longest")
-    print(list(map(str, snd_longest.getLeaves())))
-    siblings = snd_longest.siblings(tree)
-
-    if siblings.isEmpty():
-        return ingify(snd_longest)
-
-    subject = extract_subject(siblings)
-    rest = ingify(snd_longest)
-    print("subject")
-    print(subject)
-    print("rest")
-    print(rest)
-
-    question_content = subject + rest
-
-    return question_content
-
-def remove_unmvs(subtrees, pattern):
-    not_match = []
-    for tree in subtrees:
-        matcher = pattern.matcher(tree)
-        if not matcher.matches():
-            not_match.append(tree)
-
-    return not_match
-
-def second_longest(trees):
-    tuples = []
-    for tree in trees:
-        tuples.append((len(tree.getLeaves()), tree))
-    fst = lambda x: x[0]
-    tuples = sorted(tuples, key=fst, reverse=True)
-    
-    len_longest = tuples[0][0]
-
-    for length, tree in tuples:
-        if length < len_longest:
-            return tree
-    
-    return tuples[0][1]
-
-
-def extract_from_single(tree, gerund=True):#, TregexPattern):
+def extract_from_single(tree, gerund=True):
     pattern_string = "NP=nounp .. VP=verbp"
     TregexPattern = jpype.JPackage("edu").stanford.nlp.trees.tregex.TregexPattern
     pattern = TregexPattern.compile(pattern_string)
