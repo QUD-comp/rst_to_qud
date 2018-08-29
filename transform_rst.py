@@ -1,6 +1,7 @@
 import rst_tree
 import relations
-import extract_answer_phrases as eap
+#import extract_answer_phrases as eap
+import extract2 as eap
 import qud_tree
 import copy
 
