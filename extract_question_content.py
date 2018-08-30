@@ -5,9 +5,9 @@ from pattern.en import conjugate, PROGRESSIVE
 import os
 
 
-def find_question_content(rst):
+def find_question_content(rst, gerund=True):
     """
-    Extract the answer phrase from the leaves of an rst tree, to use in a qud.
+    Extract the question content from the leaves of an rst tree, to use in a qud.
 
     Parameter
     ---------
@@ -22,16 +22,17 @@ def find_question_content(rst):
 
     if not rst.edu is None:
         text = rst.edu
-        question_content_list = extract_from_text(text, single=True)
+        question_content_list = extract_from_text(text, gerund=gerund)
         question_content = " ".join(question_content_list)
+        question_content = strip_content(question_content)
         return question_content
 
     if len(rst.children[0]) > 1:
         #multinuc
-        text = _find_text(rst.children[0])
-        question_content_list = extract_from_text(text, single=False)
-        question_content = " ".join(question_content_list)
-        return question_content
+        #text = _find_text(rst.children[0])
+        #question_content_list = extract_from_text(text, single=False)
+        #question_content = " ".join(question_content_list)
+        return "that"
 
     if len(rst.children) == 0:
         raise Error("RST node is neither EDU nor does it have children.")
@@ -42,43 +43,13 @@ def find_question_content(rst):
     return question_content
 
 
-def _find_text(rsts):
-    """
-    Find EDUs dominated by a list of nodes.
-
-    Parameter
-    ---------
-    rsts : [Rst_Node]
-        list of nodes of which the EDUs have to be found
-    
-    Return
-    ------
-    text : String
-        combined EDUs
-    """
-
-    text = ""
-    for rst in rsts:
-        text += _find_text_single(rst) + " "
-
-    text = text[:-1]
-        
-    return text
-
-def _find_text_single(rst):
-    text = ""
-    if not rst.edu is None:
-        text += rst.edu
-    for sat, _ in rst.satellites_left:
-        text += " " + _find_text_single(sat)
-    for child in rst.children[0]:
-        text += " " + _find_text_single(child)
-    for sat, _ in rst.satellites_right:
-        text += " " + _find_text_single(sat)
+def strip_content(text):
+    text = text.strip("., ")
+    text = text[0].lower() + text[1:]
     return text
 
 
-def extract_from_text(text, single=True):
+def extract_from_text(text, gerund=True):
 
     classpath = os.environ['CLASSPATH']
     if classpath is None:
@@ -98,9 +69,7 @@ def extract_from_text(text, single=True):
     StanfordParser = jpype.JPackage("edu").stanford.nlp.parser.lexparser.LexicalizedParser.loadModel("edu/stanford/nlp/models/lexparser/englishPCFG.ser.gz")
     tree = StanfordParser.parse(text_list)
 
-    if single:
-        return extract_from_single(tree)
-    return ["that"]
+    return extract_from_single(tree, gerund=gerund)
 
 
 def extract_from_single(tree, gerund=True):
@@ -108,8 +77,6 @@ def extract_from_single(tree, gerund=True):
     TregexPattern = jpype.JPackage("edu").stanford.nlp.trees.tregex.TregexPattern
     pattern = TregexPattern.compile(pattern_string)
     matcher = pattern.matcher(tree)
-
-    print(tree)
 
     if matcher.find():
         np_tree = matcher.getNode("nounp")
@@ -121,15 +88,9 @@ def extract_from_single(tree, gerund=True):
         else:
             rest = list(map(str, vp_tree.getLeaves()))
 
-        print("subject")
-        print(subject)
-        print("rest")
-        print(rest)
-
         question_content = subject + rest
         return question_content
 
-    print("gnurgl")
     text = list(map(str, tree.getLeaves()))
 
     return text

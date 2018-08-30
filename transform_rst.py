@@ -123,8 +123,12 @@ def find_qud(relation, subtree, right):
         Is true if satellite is to the right of the nucleus in the relation.
     """
 
-    question_content = eqc.find_question_content(subtree)
-    print(question_content)
+    if right:
+        use_gerund = relation in use_gerund_relations_right
+    else:
+        use_gerund = relation in use_gerund_relations_left
+    
+    question_content = eqc.find_question_content(subtree, gerund=use_gerund)
 
     if right:
         part1 = question_frame_right[relation][0]
@@ -139,6 +143,25 @@ def find_qud(relation, subtree, right):
     return qud
 
 
+use_gerund_relations_right = [
+    "antithesis",
+    "background",
+    "circumstance",
+    "elaboration",
+    "e-elaboration",
+    "evaluation-s",
+    "interpretation",
+    "justify",
+    "means",
+    "result",
+    "purpose",
+    "solutionhood",
+    "unconditional",
+    "unless",
+    "unstated-relation",
+    "evaluation-n"
+    ]
+    
 
 
 
@@ -173,10 +196,30 @@ question_frame_right = {
     }
 
 
+use_gerund_relations_left = [
+    "antithesis",
+    "background",
+    "condition",
+    "enablement",
+    "evaluation-s",
+    "evidence",
+    "justify",
+    "motivation",
+    "cause",
+    "purpose",
+    "solutionhood",
+    "unconditional",
+    "unless",
+    "unstated-relation",
+    "evaluation-n",
+    "reason"
+    ]
+
+
 question_frame_left = {
     "antithesis" : ("What does speak against ", "?"),
     "background" : ("What is ", " the background to?"),
-    "circumstance" : ("What happens under this cirsumstance ", "?"),
+    "circumstance" : ("What happens under the circumstance that ", "?"),
     "concession" : ("To what is ", " a concession?"),
     "condition" : ("For what is ", " a condition?"),
     #"elaboration" : ("What about ", "?"), -> can't happen with satellite on the left-hand side
@@ -188,7 +231,7 @@ question_frame_left = {
     "justify" : ("Is there a justification for ", "?"),
     "means" : ("What can one do with ", "?"),
     "motivation" : ("What should one do because of ", "?"),
-    "cause" : ("What happens ", " because of?"),
+    "cause" : ("What happens because of ", "?"),
     "result" : ("Why does ", " happen?"),
     "otherwise" : ("What can't happen if ", "?"),
     "preparation" : ("What is ", " a preparation for?"),
