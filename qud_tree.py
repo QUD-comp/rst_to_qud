@@ -7,8 +7,6 @@ class Qud_Node:
     ----------
     edu : String
         elemental discourse unit represented by this node
-        In the current implementation, edu is always None for non-leaf nodes,
-        but it could be extended to include explicit questions as quds.
     qud : String
         Question under discussion. Is None for leaf nodes.
     children : [Qud_Node]
@@ -27,3 +25,23 @@ class Qud_Node:
             raise TypeError("child must be a Qud_Node")
 
         self.children.append(child)
+
+    def print_tree(self, indent=0):
+        """
+        Print this tree.
+
+        Parameters
+        ----------
+        indent : int
+            level of node in tree
+        """
+
+        if self.children == []:
+            out_str = indent * ">" + str(self.edu)
+        else:
+            out_str = indent * ">" + str(self.qud)
+
+        print(out_str)
+
+        for child in self.children:
+            child.print_tree(indent+1)
