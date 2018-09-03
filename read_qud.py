@@ -48,7 +48,7 @@ def get_edus(filename):
     match = re.search(regex, filename)
 
     if match is None:
-        raise Error("Could not find micro_**** filename")
+        raise "Could not find micro_**** filename"
 
     xml_filename = "../arg-microtexts-multilayer/corpus/arg/micro_" + match.group(0) + ".xml"
 
