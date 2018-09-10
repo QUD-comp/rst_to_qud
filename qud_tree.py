@@ -26,22 +26,44 @@ class Qud_Node:
 
         self.children.append(child)
 
-    def print_tree(self, indent=0):
+    def _get_tree_str(self, indent=0):
         """
-        Print this tree.
+        Return a string representing this tree.
+        Used as helper function for print_tree and write_tree.
 
-        Parameters
-        ----------
+        Parameter
+        ---------
         indent : int
             level of node in tree
         """
-
         if self.children == []:
-            out_str = indent * ">" + str(self.edu)
+            tree_str = indent * ">" + str(self.edu) + "\n"
         else:
-            out_str = indent * ">" + str(self.qud)
-
-        print(out_str)
+            tree_str = indent * ">" + str(self.qud) + "\n"
 
         for child in self.children:
-            child.print_tree(indent+1)
+            tree_str += child._get_tree_str(indent+1)
+
+        return tree_str
+
+    def print_tree(self):
+        """
+        Print this tree.
+        """
+        print(self._get_tree_str())
+
+    def write_tree(self, filename):
+        """
+        Write this tree to a file.
+
+        Parameters
+        ----------
+        filename : str
+            name of the file to write the tree to
+        """
+
+        tree_str = self._get_tree_str(indent = 0)
+
+        with open(filename, "w") as out_file:
+            out_file.write(tree_str)
+        

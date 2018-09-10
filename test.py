@@ -1,8 +1,100 @@
-import qud_tree
+import re
+import os
 import copy
 from nltk import word_tokenize
+import argparse
 
-def kappa(tree1, tree2):
+import qud_tree
+import read_rst as rr
+import transform_rst as tr
+import read_qud as rq
+
+
+parser = argparse.ArgumentParser(description="Evaluate transform_rst on a corpus")
+parser.add_argument('rst_path', help="Path of the folder of the RST trees.")
+parser.add_argument('gold_qud_path', help="Path of the folder containing the human-annotated QUD trees.")
+parser.add_argument('transformed_path', help="Path to write the transformed trees to.")
+parser.add_argument('result_filename', help="Path of the file to write the evaluation results to.")
+
+args = parser.parse_args()
+
+
+
+
+def evaluate_transform(rst_path, gold_qud_path, transformed_path, result_filename):
+    """
+    Evaluate the transform function by transforming RST trees
+    and comparing them to human-annotated QUD trees.
+
+    Parameters
+    ----------
+    rst_path : str
+        Path of the folder of the RST trees.
+    gold_qud_path : str
+        Path of the folder containing the human-annotated QUD trees.
+    transformed_path : str
+        Path to write the transformed trees to.
+    result_filename : str
+        Path of the file to write the evaluation results to.
+    """
+
+    def get_code(qud_name):
+        regex = "([a-z][0-9]{3})"
+        match = re.search(regex, qud_name)
+        if match:
+            return match.group(1)
+        
+    def get_rst_path(code):
+        filename = "micro_" + code + ".rs3"
+        path = os.path.join(rst_path, filename)
+        return path
+
+
+    gold_filenames = os.listdir(gold_qud_path)
+
+    codes = list(set(map(get_code, gold_filenames)))
+
+    rst_file_paths = list(map(get_rst_path, codes))
+
+    for rst_path, code in zip(rst_file_paths, codes):
+        rst_tree = rr.read_rst_from_microtexts(rst_path)
+        qud_transformed = tr.transform(rst_tree)[0]
+
+        transformed_filename = code + ".txt"
+        transformed_filename = os.path.join(transformed_path, transformed_filename)
+
+        qud_transformed.write_tree(transformed_filename)
+
+
+        curr_gold_filenames = []
+        for name in gold_filenames:
+            match = re.search(code, name)
+            if match:
+                curr_gold_filenames.append(name)
+
+        for name in curr_gold_filenames:
+            #print(name)
+            try:
+                gold_path = os.path.join(gold_qud_path, name)
+                gold_qud = rq.read_qud_from_microtexts(gold_path)
+                kappa = calculate_kappa(qud_transformed, gold_qud)
+
+                with open(result_filename, "a") as result_file:
+                    line = code + " | " + str(kappa) + "\n"
+                    result_file.write(line)
+            except IndexError:
+                print(name)
+
+
+    
+
+
+    
+
+    
+
+
+def calculate_kappa(tree1, tree2):
     """
     Calculate kappa value, comparing the structural similarity of two QUD trees.
 
@@ -57,7 +149,6 @@ def kappa(tree1, tree2):
     nf1 = num_false(matrix1)
     nf2 = num_false(matrix2)
 
-    print(nt1, nt2, nf1, nf2)
     
     expected = 1/num_cells * (nt1 * nt2 + nf1 * nf2)
 
@@ -189,11 +280,11 @@ def enumerate_edus(edus1, edus2):
         ret_edus.append((num_list, combined_edu))
 
     return ret_edus
-            
-        
-        
 
-    
+
+
+
+
 
 
 def get_edus(tree):
@@ -212,7 +303,7 @@ def get_edus(tree):
     """
 
     edus = []
-    
+
     if not tree.edu is None:
         edus.append(tree.edu)
 
@@ -220,3 +311,10 @@ def get_edus(tree):
         edus += get_edus(child)
 
     return edus
+
+
+
+evaluate_transform(args.rst_path,
+                   args.gold_qud_path,
+                   args.transformed_path,
+                   args.result_filename)
