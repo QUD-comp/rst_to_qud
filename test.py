@@ -73,7 +73,6 @@ def evaluate_transform(rst_path, gold_qud_path, transformed_path, result_filenam
                 curr_gold_filenames.append(name)
 
         for name in curr_gold_filenames:
-            #print(name)
             try:
                 gold_path = os.path.join(gold_qud_path, name)
                 gold_qud = rq.read_qud_from_microtexts(gold_path)
@@ -82,8 +81,13 @@ def evaluate_transform(rst_path, gold_qud_path, transformed_path, result_filenam
                 with open(result_filename, "a") as result_file:
                     line = code + " | " + str(kappa) + "\n"
                     result_file.write(line)
-            except IndexError:
-                print(name)
+            except Exception as ex:
+                #write errors to file in order to be able to deal with them by hand
+                with open("error_log", "a") as error_file:
+                    error_file.write(name)
+                    error_file.write("\n")
+                    error_file.write(str(ex))
+                    error_file.write("\n")
 
 
     
