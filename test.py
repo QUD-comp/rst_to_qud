@@ -90,12 +90,11 @@ def evaluate_transform(rst_path, gold_qud_path, transformed_path, result_filenam
                     error_file.write("\n")
 
 
-    
 
 
-    
 
-    
+
+
 
 
 def calculate_kappa(tree1, tree2):
@@ -123,7 +122,7 @@ def calculate_kappa(tree1, tree2):
     edus2 = get_edus(tree2)
 
     listify_fst = lambda tup : ([tup[0]],tup[1])
-    
+
     if len(edus1) > len(edus2):
         edus1 = list(enumerate(edus1))
         edus2 = enumerate_edus(edus2, edus1)
@@ -153,8 +152,8 @@ def calculate_kappa(tree1, tree2):
     nf1 = num_false(matrix1)
     nf2 = num_false(matrix2)
 
-    
-    expected = 1/num_cells * (nt1 * nt2 + nf1 * nf2)
+
+    expected = 1/(num_cells * num_cells) * (nt1 * nt2 + nf1 * nf2)
 
     kappa = (observed - expected) / (1 - expected)
 
@@ -192,7 +191,7 @@ def build_matrix(tree, edus):
                 matrix[(i,j)] = False
     
     #fill matrix
-    edu_pairs = get_spans(tree, edus)
+    edu_pairs, _, _ = get_spans(tree, edus)
 
     for pair in edu_pairs:
         matrix[pair] = True
@@ -200,47 +199,36 @@ def build_matrix(tree, edus):
     return matrix
 
 
-def get_spans(tree, edus):
+def get_spans(tree, edus, right_num=0):
+
     spans = []
+    leftmost_edu = edus[0]
 
     if tree.children == []:
-        num_list = edus[0][0]
-        spans += get_spans_from_list(num_list)
-        return spans
+        right_num = edus[0][0][-1]
+        edus = edus[1:]
+        return spans, edus, right_num
 
     left = None
     if not tree.edu is None:
         #If there is an explicit QUD, it's the leftmost edu in the span.
         left = edus[0][0][0]
+        right_num = edus[0][0][-1]
         edus = edus[1:]
 
     for child in tree.children:
-        spans += get_spans(child, edus)
-        rightmost_thus_far = spans[-1][1]
-        edu_num = edus[0][0][0]
-        while edu_num <= rightmost_thus_far:
-            edus = edus[1:]
-            if edus == []:
-                break
-            edu_num = edus[0][0][0]
+        new_spans, edus, right_num = get_spans(child, edus, right_num)
+        spans += new_spans
 
-    if left is None:
-        left = spans[0][0]
-    right = spans[-1][1]
+    left = leftmost_edu[0][0]
+    right = right_num
 
     spans.append((left,right))
 
-    return spans
-            
-                    
+    return spans, edus, right_num
 
-def get_spans_from_list(num_list):
-    spans = []
-    for num in num_list:
-        for num2 in num_list:
-            if num <= num2:
-                spans.append((num, num2))
-    return spans
+        
+
             
     
     
@@ -318,7 +306,7 @@ def get_edus(tree):
 
 
 
-evaluate_transform(args.rst_path,
-                   args.gold_qud_path,
-                   args.transformed_path,
-                   args.result_filename)
+#evaluate_transform(args.rst_path,
+#                   args.gold_qud_path,
+#                   args.transformed_path,
+#                   args.result_filename)
