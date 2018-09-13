@@ -1,6 +1,7 @@
-from rst_tree import Rst_Node
 import xml.etree.ElementTree as ET
+
 import relations
+from rst_tree import Rst_Node
 
 
 def read_rst_from_microtexts(filename):

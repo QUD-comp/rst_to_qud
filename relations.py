@@ -1,6 +1,7 @@
 """
 contains the rst relations used in the project
-is currently the same as the relations used in the microtexts corpus
+is currently the same as the relations used in 
+the arg-microtexts-multilayer corpus (https://github.com/peldszus/arg-microtexts-multilayer)
 """
 
 multi_nuc = ["conjunction",

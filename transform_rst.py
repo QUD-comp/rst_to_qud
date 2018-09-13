@@ -1,8 +1,13 @@
+import copy
+
 import rst_tree
 import relations
 import extract_question_content as eqc
 import qud_tree
-import copy
+
+def transform_rst(rst_tree):
+    """wrapper function for transform()"""
+    return transform(rst_tree)[0]
 
 def transform(rst_node, root=True):
     """

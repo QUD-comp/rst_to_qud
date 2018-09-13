@@ -104,6 +104,7 @@ def get_subtree(lines, edus):
 
 
 def is_edu(text, edus):
+    """Check if text matches any of the edus in the list."""
     for edu in edus:
         match = re.match(edu.strip(), text)
         if match:
@@ -112,6 +113,26 @@ def is_edu(text, edus):
 
 
 def get_child_lines(lines, root_indent):
+    """
+    Get lines which represent descendants of a node in the tree, 
+    according to the indentation with ">".
+
+    Parameters
+    ----------
+    lines : [str]
+        lines from which to find the descendants
+    root_indent : int
+        number indicating how far the root of this subtree was indented
+        descendants are all lines until one with the same indentation occurs
+        (representing a sibling of the root, rather than descendant)
+
+    Return
+    ------
+    children_lists : [[str]]
+        For each child of the root of the current subtree,
+        children_lists contains a list of the strings 
+        representing the child and its descendants.
+    """
     children_lists = []
     child_list = []
     for line in lines:

@@ -1,8 +1,6 @@
 import re
 import os
-import copy
 from nltk import word_tokenize
-import argparse
 
 import qud_tree
 import read_rst as rr
@@ -10,13 +8,6 @@ import transform_rst as tr
 import read_qud as rq
 
 
-parser = argparse.ArgumentParser(description="Evaluate transform_rst on a corpus")
-parser.add_argument('rst_path', help="Path of the folder of the RST trees.")
-parser.add_argument('gold_qud_path', help="Path of the folder containing the human-annotated QUD trees.")
-parser.add_argument('transformed_path', help="Path to write the transformed trees to.")
-parser.add_argument('result_filename', help="Path of the file to write the evaluation results to.")
-
-args = parser.parse_args()
 
 
 
@@ -58,7 +49,7 @@ def evaluate_transform(rst_path, gold_qud_path, transformed_path, result_filenam
 
     for rst_path, code in zip(rst_file_paths, codes):
         rst_tree = rr.read_rst_from_microtexts(rst_path)
-        qud_transformed = tr.transform(rst_tree)[0]
+        qud_transformed = tr.transform_rst(rst_tree)
 
         transformed_filename = code + ".txt"
         transformed_filename = os.path.join(transformed_path, transformed_filename)
@@ -199,7 +190,19 @@ def build_matrix(tree, edus):
     return matrix
 
 
-def get_spans(tree, edus, right_num=0):
+def get_spans(tree, edus, right_num=-1):
+    """
+    Get tuples of EDUs spanned by the QUDs in the tree.
+
+    Parameters
+    ----------
+    tree : Qud_Node
+        tree of which to get spans
+    edus : [([int], str)]
+        list of EDUs annotated with their numbers
+    right_num : int
+        number of last EDU found in left-to-right depth-first-search of tree
+    """
 
     spans = []
     leftmost_edu = edus[0]
@@ -220,7 +223,8 @@ def get_spans(tree, edus, right_num=0):
         new_spans, edus, right_num = get_spans(child, edus, right_num)
         spans += new_spans
 
-    left = leftmost_edu[0][0]
+    if left is None:
+        left = leftmost_edu[0][0]
     right = right_num
 
     spans.append((left,right))
@@ -306,7 +310,3 @@ def get_edus(tree):
 
 
 
-#evaluate_transform(args.rst_path,
-#                   args.gold_qud_path,
-#                   args.transformed_path,
-#                   args.result_filename)
