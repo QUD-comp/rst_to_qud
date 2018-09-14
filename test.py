@@ -164,7 +164,8 @@ def find_boundary_segments(edus1, edus2):
     boundary_segments : [(int, str)]
         enumerated list of smaller segments given by boundaries from edus1 and edus2
     """
-
+    
+    
     boundary_segments = []
     
     while edus1 != [] and edus2 != []:

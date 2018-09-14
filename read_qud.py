@@ -80,11 +80,11 @@ def get_subtree(lines, edus):
 
     root_line = lines[0]
 
-    match = re.match(r"(>*)(.*)", root_line)
+    match = re.match(r"(>*)(#*[AQ]_[0-9]+(\.[0-9]+)*#*){0,1}(.*)", root_line)
     indent = len(match.group(1))
     children_lists = get_child_lines(lines[1:], indent)
 
-    root_text = match.group(2).strip()
+    root_text = match.group(4).strip()
 
     if not is_edu(root_text, edus):
         #It's an implicit QUD.
