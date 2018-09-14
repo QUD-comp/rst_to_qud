@@ -106,7 +106,14 @@ def get_subtree(lines, edus):
 def is_edu(text, edus):
     """Check if text matches any of the edus in the list."""
     for edu in edus:
-        match = re.match(edu.strip(), text)
+        #try match in one direction
+        regex = re.escape(edu.strip())
+        match = re.search(regex, text)
+        if match:
+            return True
+        #try match in other direction
+        regex = re.escape(text)
+        match = re.search(regex, edu.strip())
         if match:
             return True
     return False
