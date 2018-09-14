@@ -70,7 +70,7 @@ def evaluate_transform(rst_path, gold_qud_path, transformed_path, result_filenam
                 kappa = calculate_kappa(qud_transformed, gold_qud)
 
                 with open(result_filename, "a") as result_file:
-                    line = code + " | " + str(kappa) + "\n"
+                    line = code + " | " + name + " | " + str(kappa) + "\n"
                     result_file.write(line)
             except Exception as ex:
                 #write errors to file in order to be able to deal with them by hand
@@ -112,19 +112,15 @@ def calculate_kappa(tree1, tree2):
     edus1 = get_edus(tree1)
     edus2 = get_edus(tree2)
 
-    listify_fst = lambda tup : ([tup[0]],tup[1])
+    boundary_segments = find_boundary_segments(edus1, edus2)
 
-    if len(edus1) > len(edus2):
-        edus1 = list(enumerate(edus1))
-        edus2 = enumerate_edus(edus2, edus1)
-        edus1 = list(map(listify_fst, edus1))
-    else:
-        edus2 = list(enumerate(edus2))
-        edus1 = enumerate_edus(edus1, edus2)
-        edus2 = list(map(listify_fst, edus2))
+    edus1 = enumerate_edus(edus1, boundary_segments)
+    edus2 = enumerate_edus(edus2, boundary_segments)
 
+    
     matrix1 = build_matrix(tree1, edus1)
     matrix2 = build_matrix(tree2, edus2)
+    
 
     num_cells = len(matrix1.keys())
 
@@ -150,7 +146,53 @@ def calculate_kappa(tree1, tree2):
 
     return kappa
 
+
+def find_boundary_segments(edus1, edus2):
+    """
+    Find EDU boundaries according to the trees.
+    Presupposes that edus1 and edus2 contain the same text.
+
+    Parameters
+    ----------
+    edus1 : [str]
+        EDUs from first tree
+    edus2 : [str]
+        EDUs from second tree
+
+    Return
+    ------
+    boundary_segments : [(int, str)]
+        enumerated list of smaller segments given by boundaries from edus1 and edus2
+    """
+
+    boundary_segments = []
     
+    while edus1 != [] and edus2 != []:
+        edu1 = edus1[0].strip()
+        edus1 = edus1[1:]
+        edu2 = edus2[0].strip()
+        edus2 = edus2[1:]
+
+        if edu1 == edu2:
+            boundary_segments.append(edu1)
+        elif edu1.startswith(edu2):
+            boundary_segments.append(edu2)
+            edu1 = edu1[len(edu2):]
+            edus1 = [edu1] + edus1
+        else:
+            boundary_segments.append(edu1)
+            edu2 = edu2[len(edu1):]
+            edus2 = [edu2] + edus2
+            
+
+    #simply append remaining EDUs
+    boundary_segments += edus1
+    boundary_segments += edus2
+
+    return list(enumerate(boundary_segments))
+            
+
+
 
 
 def build_matrix(tree, edus):
@@ -239,9 +281,9 @@ def get_spans(tree, edus, right_num=-1):
 
 
 
-def enumerate_edus(edus1, edus2):
+def enumerate_edus(edus1, boundary_segments):
     """
-    Annotate edus1 with the numbers of the corresponding edus in edus2.
+    Annotate edus1 with the numbers of the corresponding segments in boundary_segments.
 
     This is necessary because in some cases, edus were combined in the qud annotations of the Potsdam microtexts corpus.
 
@@ -249,8 +291,8 @@ def enumerate_edus(edus1, edus2):
     ---------
     edus1 : [str]
         EDUs to annotate with the numbers.
-    edus2 : [(int, str)]
-        EDUs already enumerated.
+    boundary_segments : [(int, str)]
+        enumerated segments
 
     Return
     ------
@@ -262,14 +304,14 @@ def enumerate_edus(edus1, edus2):
 
     for combined_edu in edus1:
         combined_list = word_tokenize(combined_edu.strip(",. ").lower())
-        num, edu = edus2[0]
-        edus2 = edus2[1:]
+        num, edu = boundary_segments[0]
+        boundary_segments = boundary_segments[1:]
         single_list = word_tokenize(edu.strip(",. ").lower())
         num_list = [num]
         
         while len(combined_list) > len(single_list):
-            num, edu = edus2[0]
-            edus2 = edus2[1:]
+            num, edu = boundary_segments[0]
+            boundary_segments = boundary_segments[1:]
             single_list += word_tokenize(edu)
             num_list.append(num)
 
