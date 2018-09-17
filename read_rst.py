@@ -31,6 +31,8 @@ def read_rst_from_microtexts(filename):
 
     nodes = list(segments_numbered) + list(groups_numbered)
 
+
+
     
     root = list(filter(lambda x : not 'parent' in x[0].attrib.keys(), nodes))[0]
     
@@ -59,6 +61,8 @@ def build_tree(nodes, root):
     """
     
     attributes=root[0].attrib
+
+    
     if not "type" in attributes.keys():
         children = []
         multi_nuc_relation = None
@@ -78,6 +82,7 @@ def build_tree(nodes, root):
         child_tree = build_tree(nodes, child)
         node.add_child(child_tree)
 
+    
     satellites_left, satellites_right = find_satellites(nodes, root)
 
     for satellite in satellites_left:
@@ -197,6 +202,8 @@ def find_satellites(nodes, nucleus):
 
     nucleus_id = nucleus[0].attrib["id"]
 
+        
+
     def parent_filter(n):
         if not "parent" in n[0].attrib.keys():
             return False
@@ -207,11 +214,17 @@ def find_satellites(nodes, nucleus):
         if not "relname" in n[0].attrib.keys():
             return False
         else:
+            if n[0].attrib["relname"] == "sameunit":
+                #Throw error for sameunit tag, since the system currently can't deal with
+                #noncontiguous EDUs.
+                raise Exception("RST tree contains sameunit tag.")
             return n[0].attrib["relname"] in relations.mono_nuc
         
     
-    satellites_and_children = filter(parent_filter, nodes)
+    satellites_and_children = list(filter(parent_filter, nodes))
+
     satellites = list(filter(relname_filter, satellites_and_children))
+
     satellites_left, satellites_right = reorder_satellites(satellites, nodes, nucleus)
     
     return satellites_left, satellites_right

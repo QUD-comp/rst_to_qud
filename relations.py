@@ -14,7 +14,7 @@ multi_nuc = ["conjunction",
 
 mono_nuc = ["antithesis",
             "background",
-            "circumstances",
+            "circumstance",
             "concession",
             "condition",
             "elaboration",
