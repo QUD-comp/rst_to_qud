@@ -37,6 +37,15 @@ def evaluate_transform(rst_path, gold_qud_path, transformed_path, result_filenam
         
     def get_rst_path(code):
         filename = "micro_" + code + ".rs3"
+
+        no_sameunit_path = os.path.join(rst_path, "../rst-without-sameunit")
+        no_sameunit_path = os.path.join(no_sameunit_path, filename)
+        if os.path.isfile(no_sameunit_path):
+            #some RST trees in the microtexts corpus include the sameunit tag
+            #read_rst can't deal with that, so we need to use the
+            #corresponding files not using the sameunit tag
+            return no_sameunit_path
+        
         path = os.path.join(rst_path, filename)
         return path
 
@@ -48,7 +57,16 @@ def evaluate_transform(rst_path, gold_qud_path, transformed_path, result_filenam
     rst_file_paths = list(map(get_rst_path, codes))
 
     for rst_path, code in zip(rst_file_paths, codes):
-        rst_tree = rr.read_rst_from_microtexts(rst_path)
+        try:
+            rst_tree = rr.read_rst_from_microtexts(rst_path)
+        except Exception as ex:
+            with open("error_log", "a") as error_file:
+                error_file.write(code)
+                error_file.write("\n")
+                error_file.write(str(ex))
+                error_file.write("\n")
+            continue
+            
         qud_transformed = tr.transform_rst(rst_tree)
 
         transformed_filename = code + ".txt"
@@ -68,6 +86,9 @@ def evaluate_transform(rst_path, gold_qud_path, transformed_path, result_filenam
                 gold_path = os.path.join(gold_qud_path, name)
                 gold_qud = rq.read_qud_from_microtexts(gold_path)
                 kappa = calculate_kappa(qud_transformed, gold_qud)
+                if kappa > 1:
+                    print(name)
+                    print(kappa)
 
                 with open(result_filename, "a") as result_file:
                     line = code + " | " + name + " | " + str(kappa) + "\n"
