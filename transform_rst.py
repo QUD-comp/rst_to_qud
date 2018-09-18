@@ -132,7 +132,7 @@ def find_qud(relation, subtree, right):
         use_gerund = relation in use_gerund_relations_right
     else:
         use_gerund = relation in use_gerund_relations_left
-    
+
     question_content = eqc.find_question_content(subtree, gerund=use_gerund)
 
     if right:
@@ -141,6 +141,7 @@ def find_qud(relation, subtree, right):
     else:
         part1 = question_frame_left[relation][0]
         part2 = question_frame_left[relation][1]
+
 
 
     qud = part1 + question_content + part2
@@ -190,7 +191,7 @@ question_frame_right = {
     "otherwise" : ("What can't happen if ", "?"),
     #"preparation" -> can't happen with satellite on the right-hand side
     "purpose" : ("What does ", " achieve?"),
-    "restatement" : ("What is another way to say " "?"),
+    "restatement" : ("What is another way to say ", "?"),
     "solutionhood" : ("What problem does ", " solve?"),
     "summary" : ("How can ", " be summed up?"),
     "unconditional" : ("What could affect ", ", but doesn't?"),
