@@ -66,4 +66,15 @@ class Qud_Node:
 
         with open(filename, "w") as out_file:
             out_file.write(tree_str)
-        
+
+    def get_depth(self):
+        """Return depth of this tree."""
+        if self.children == []:
+            return 0
+
+        max_child_depth = 0
+        for child in self.children:
+            depth = child.get_depth()
+            if depth > max_child_depth:
+                max_child_depth = depth
+        return max_child_depth + 1
