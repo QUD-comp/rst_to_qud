@@ -359,9 +359,11 @@ def find_relation(qud):
     Find relation from which a QUD was produced.
 
     Find the relation by matching the question_frames from transform_rst to the QUD.
-    This works mostly, since most relations have differing frames.
-    However, "elaboration", "e-elaboration", and "unstated-relation" will be match to "elaboration";
-    also "evaluation-n" and "evaluation-s" cannot be told apart from each other.
+    This is a crude method, since sometimes different relations have the same question frames.
+    For example, "elaboration", "e-elaboration", and "unstated-relation" will be 
+    matched to "elaboration"; 
+    also "evaluation-n" and "evaluation-s" cannot be told apart from each other,
+    neither can "result" and "cause".
 
     Parameter
     ---------
