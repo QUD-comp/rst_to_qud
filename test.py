@@ -52,6 +52,12 @@ def evaluate_transform(rst_path, gold_qud_path, transformed_path, result_filenam
         path = os.path.join(rst_path, filename)
         return path
 
+    with open(result_filename, "w") as result_file:
+        header = "file code | RST filename | kappa | depth of transformed tree | depth of gold tree | difference between gold_depth and transformed_depth\n"
+        result_file.write(header)
+    with open(relations_filename, "w") as rel_file:
+        header = "relation | total number in RST trees | number of correct spans using that relation | percentage of correct spans"
+        rel_file.write(header)
 
     gold_filenames = os.listdir(gold_qud_path)
 
@@ -117,11 +123,8 @@ def evaluate_transform(rst_path, gold_qud_path, transformed_path, result_filenam
                     error_file.write(str(ex))
                     error_file.write("\n")
 
-        with open(relations_filename, "w") as rel_file:
+        with open(relations_filename, "a") as rel_file:
             for rel in relations_total.keys():
-                #if relations_total[key] == 0:
-                #    percentage = 0
-                #else:
                 percentage = relations_spans[rel] / relations_total[rel]
                 line = str(rel) + " | " + str(relations_total[rel]) + " | " + str(relations_spans[rel]) + " | " + str(percentage) + "\n"
                 rel_file.write(line)
